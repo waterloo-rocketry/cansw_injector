@@ -1,7 +1,7 @@
 #include <xc.h>
 #include "injector.h"
 
-static void led_init(){
+void led_init(){
     TRISC2 = 0;     // set as output
     LATC2 = 1;      // turn it off
     
