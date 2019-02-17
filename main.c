@@ -26,6 +26,15 @@ int main(int argc, char** argv) {
 
     // Enable global interrupts
     INTCON0bits.GIE = 1;
+    
+    // Set up CAN TX
+    TRISC0 = 0;
+    RC0PPS = 0x33;
+    
+    // Set up CAN RX
+    TRISC1 = 1;
+    ANSELC1 = 0;
+    CANRXPPS = 0x11;
 
     // local initializers
     led_init();
@@ -83,8 +92,6 @@ static void can_msg_handler(can_msg_t *msg) {
     if (msg->sid == 0xa) {
         WHITE_LED_ON();
     } else if (msg->sid == 0xb) {
-        RED_LED_ON();
-    } else {
         RED_LED_ON();
     }
 }
