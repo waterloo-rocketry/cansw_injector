@@ -1,5 +1,15 @@
 #include <xc.h>
+
 #include "injector.h"
+
+#include "canlib/can.h"
+#include "canlib/can_common.h"
+#include "canlib/pic18f26k83/pic18f26k83_can.h"
+#include "canlib/message_types.h"
+
+#include "mcc_generated_files/fvr.h"
+#include "mcc_generated_files/adcc.h"
+#include "mcc_generated_files/mcc.h"
 
 void led_init(){
     TRISC2 = 0;     // set as output
@@ -62,4 +72,43 @@ void injector_open() {
     __delay_us(200);
     LATB5 = 1;  // high side B -> high
     LATB2 = 1;  // low side A -> high
+}
+
+bool check_battery_voltage() {
+    adc_result_t batt_raw = ADCC_GetSingleConversion(channel_VBAT);
+    float batt_voltage = batt_raw * 5.00 / 4096.0;  // get the voltage seen by the MCU
+    batt_voltage *= (10 + 27) / 10;                 // get undivided battery voltage
+    
+    if (batt_voltage < INJ_BATT_UNDERVOLTAGE_THRESHOLD_V) {
+        can_msg_t error_msg;
+        error_msg.sid = MSG_GENERAL_BOARD_STATUS | BOARD_UNIQUE_ID;
+        error_msg.data_len = 0;     // FIXME when message format is nailed down
+        can_send(&error_msg, 3);    // send at high priority
+        return false;
+    }
+    
+    // things look ok
+    return true;
+}
+
+bool check_current_draw() {
+    adc_result_t sense_raw = ADCC_GetSingleConversion(channel_VSENSE);
+    float curr_draw = (sense_raw * 5.00 / 4096.0) / (100 * 0.2);
+    curr_draw *= 1000 / (100 * 0.2);    // get current draw in mA
+    
+    if (curr_draw > INJ_OVERCURRENT_THRESHOLD_MA) {
+        can_msg_t error_msg;
+        error_msg.sid = MSG_GENERAL_BOARD_STATUS | BOARD_UNIQUE_ID;
+        error_msg.data_len = 0;     // FIXME when message format is nailed down
+        can_send(&error_msg, 3);    // send at high priority
+        return false;
+    }
+    
+    // things look ok
+    return true;
+}
+
+bool check_valve_status() {
+    // nothing rn
+    return true;
 }
