@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "injector.h"
+#include "timer.h"
 
 #include "canlib/can.h"
 #include "canlib/can_common.h"
@@ -26,7 +27,7 @@ int main(int argc, char** argv) {
 
     // Enable global interrupts
     INTCON0bits.GIE = 1;
-    
+
     // Set up CAN TX
     TRISC0 = 0;
     RC0PPS = 0x33;
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
 
     // local initializers
     led_init();
+    timer0_init();
     injector_init();
 
     // set up CAN module
@@ -70,15 +72,20 @@ int main(int argc, char** argv) {
             can_send(&board_stat_msg, 0);   // send at low priority
         }
 
-        // TODO: Deal with incoming CAN messages synchronously
     }
     return (EXIT_SUCCESS);
 }
 
 static void interrupt interrupt_handler() {
+    // we've received a CAN related interrupt
     if (PIR5) {
-        // we've received a CAN-related interrupt
         can_handle_interrupt();
+    }
+
+    // Timer0 has overflowed - update millis() function
+    if (PIE3bits.TMR0IE == 1 && PIR3bits.TMR0IF == 1) {
+        timer0_handle_interrupt();
+        PIR3bits.TMR0IF = 0;
     }
 }
 
