@@ -5,8 +5,9 @@
 
 #define _XTAL_FREQ 1000000
 
-#define INJ_BATT_UNDERVOLTAGE_THRESHOLD_V 10.0  // in volts
-#define INJ_OVERCURRENT_THRESHOLD_MA 100    // in milli-amps
+#define INJ_BATT_UNDERVOLTAGE_THRESHOLD_mV 10000
+#define INJ_BATT_OVERVOLTAGE_THRESHOLD_mV 14000
+#define INJ_OVERCURRENT_THRESHOLD_mA 100
 
 #define WHITE_LED_ON() (LATC2 = 0) 
 #define WHITE_LED_OFF() (LATC2 = 1)
@@ -23,7 +24,7 @@ void injector_open();
 void injector_close();
 
 // Board status checks
-// NOTE: These functions will send CAN messages upon error
+// NOTE: These functions will asynchronously send CAN messages upon error
 
 /*
  * Checks voltage coming off the injector valve battery. If the voltage is below

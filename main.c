@@ -15,6 +15,11 @@
 #include <xc.h> // should be after any pragma statements
 
 static void can_msg_handler(can_msg_t *msg);
+static void send_status_ok(void);
+
+// Follows VALVE_STATE in message_types.h
+// SHOULD ONLY BE MODIFIED IN ISR
+static uint8_t requested_valve_state = VALVE_OPEN;
 
 int main(int argc, char** argv) {
     // MCC Generated Initializations
@@ -31,7 +36,7 @@ int main(int argc, char** argv) {
     // Set up CAN TX
     TRISC0 = 0;
     RC0PPS = 0x33;
-    
+
     // Set up CAN RX
     TRISC1 = 1;
     ANSELC1 = 0;
@@ -59,20 +64,35 @@ int main(int argc, char** argv) {
         __delay_ms(100);
         BLUE_LED_OFF();
         __delay_ms(100);
-        
+
         bool status_ok = true;
         status_ok &= check_battery_voltage();
         status_ok &= check_current_draw();
-        status_ok &= check_valve_status(); // this might need rework
- 
+        status_ok &= check_valve_status();
+
         if (status_ok) {
-            can_msg_t board_stat_msg;
-            board_stat_msg.sid = MSG_GENERAL_BOARD_STATUS | BOARD_UNIQUE_ID;
-            board_stat_msg.data_len = 0;
-            can_send(&board_stat_msg, 0);   // send at low priority
+            send_status_ok();
         }
 
+        // "thread safe" because main loop should never write to requested_valve_state
+        switch (requested_valve_state) {
+            case VALVE_OPEN:
+                injector_open();
+                break;
+            case VALVE_CLOSED:
+                injector_close();
+                break;
+
+            // should never get here
+            default:
+                // spit a message
+                break;
+        }
+
+        // TODO: report valve state
+
     }
+
     return (EXIT_SUCCESS);
 }
 
@@ -83,6 +103,7 @@ static void interrupt interrupt_handler() {
     }
 
     // Timer0 has overflowed - update millis() function
+    // This happens approximately every 500us
     if (PIE3bits.TMR0IE == 1 && PIR3bits.TMR0IF == 1) {
         timer0_handle_interrupt();
         PIR3bits.TMR0IF = 0;
@@ -91,14 +112,68 @@ static void interrupt interrupt_handler() {
 
 // This is called from within can_handle_interrupt()
 static void can_msg_handler(can_msg_t *msg) {
-    WHITE_LED_OFF();
-    RED_LED_OFF();
-    BLUE_LED_OFF();
+    uint16_t msg_type = get_message_type(msg);
+    switch (msg_type) {
+        case MSG_GENERAL_CMD:
+            // nothing right now
+            break;
 
-    // vent control logic will go in here
-    if (msg->sid == 0xa) {
-        WHITE_LED_ON();
-    } else if (msg->sid == 0xb) {
-        RED_LED_ON();
+        case MSG_INJ_VALVE_CMD:
+            // see message_types.h for message format
+            requested_valve_state = msg->data[3];
+            break;
+
+        case MSG_LEDS_ON:
+            RED_LED_ON();
+            BLUE_LED_ON();
+            WHITE_LED_ON();
+            break;
+
+        case MSG_LEDS_OFF:
+            RED_LED_OFF();
+            BLUE_LED_OFF();
+            WHITE_LED_OFF();
+            break;
+
+        // all the other ones - do nothing
+        case MSG_VENT_VALVE_CMD:
+        case MSG_DEBUG_MSG:
+        case MSG_DEBUG_PRINTF:
+        case MSG_VENT_VALVE_STATUS:
+        case MSG_INJ_VALVE_STATUS:
+        case MSG_SENSOR_ACC:
+        case MSG_SENSOR_GYRO:
+        case MSG_SENSOR_MAG:
+        case MSG_SENSOR_ANALOG:
+        case MSG_GENERAL_BOARD_STATUS:
+            break;
+
+        // illegal message type - should never get here
+        default:
+            // send a message or something
+            break;
     }
+}
+
+// Send a CAN message with nominal status
+static void send_status_ok(void) {
+    can_msg_t board_stat_msg;
+    board_stat_msg.sid = MSG_GENERAL_BOARD_STATUS | BOARD_UNIQUE_ID;
+
+    // capture the most recent timestamp
+    uint32_t last_millis = millis();
+
+    // paste in the timestamp one byte at a time. Most significant byte goes in data[0].
+    board_stat_msg.data[0] = (last_millis >> 16) & 0xff;
+    board_stat_msg.data[1] = (last_millis >> 8) & 0xff;
+    board_stat_msg.data[2] = (last_millis >> 0) & 0xff;
+
+    // set the error code
+    board_stat_msg.data[3] = E_NOMINAL;
+
+    // 3 byte timestamp + 1 byte error code
+    board_stat_msg.data_len = 4;
+
+    // send it off at low priority
+    can_send(&board_stat_msg, 0);
 }
