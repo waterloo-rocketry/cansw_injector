@@ -53,7 +53,7 @@
 #include "fvr.h"
 #include "adcc.h"
 
-#define _XTAL_FREQ  1000000
+#define _XTAL_FREQ  12000000
 
 
 /**

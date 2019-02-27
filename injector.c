@@ -52,6 +52,7 @@ void injector_init() {
 }
 
 void injector_close() {
+    WHITE_LED_OFF();
     // turn everything off for a bit to avoid shoot-through
     LATB4 = 0;
     LATB5 = 0;
@@ -64,6 +65,7 @@ void injector_close() {
 }
 
 void injector_open() {
+    WHITE_LED_ON();
     // turn everything off for a bit to avoid shoot-through
     LATB4 = 0;
     LATB5 = 0;

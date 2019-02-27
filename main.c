@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
     // set up CAN module
     can_timing_t can_setup;
-    can_setup.brp = 0;
+    can_setup.brp = 11;
     can_setup.sjw = 3;
     can_setup.btlmode = 0x01;
     can_setup.sam = 0;
@@ -76,6 +76,7 @@ int main(int argc, char** argv) {
 
         // "thread safe" because main loop should never write to requested_valve_state
         switch (requested_valve_state) {
+            //TODO, if the valve is already open, ideally we wouldn't call injector_open again
             case VALVE_OPEN:
                 injector_open();
                 break;
