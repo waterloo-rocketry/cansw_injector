@@ -14,12 +14,15 @@
 #include "mcc_generated_files/mcc.h"
 #include <xc.h> // should be after any pragma statements
 
+#include "timer.h"
+#include "error_checks.h"
+
 static void can_msg_handler(can_msg_t *msg);
 static void send_status_ok(void);
 
 // Follows VALVE_STATE in message_types.h
 // SHOULD ONLY BE MODIFIED IN ISR
-static uint8_t requested_valve_state = VALVE_OPEN;
+static enum VALVE_STATE requested_valve_state = VALVE_OPEN;
 
 int main(int argc, char** argv) {
     // MCC Generated Initializations
@@ -58,39 +61,53 @@ int main(int argc, char** argv) {
     can_setup.seg2ph = 0x04;
     can_init(&can_setup, can_msg_handler);
 
+    uint32_t last_millis = millis();
+    bool red_led_on = false;
+    
     // main event loop
     while (1) {
-        BLUE_LED_ON();
-        __delay_ms(100);
-        BLUE_LED_OFF();
-        __delay_ms(100);
 
-        bool status_ok = true;
-        status_ok &= check_battery_voltage();
-        status_ok &= check_current_draw();
-        status_ok &= check_valve_status();
+        // Check status, messages, valve requests every MAX_LOOP_TIME_DIFF_ms millis
+        // Avoid spamming bus traffic and sending too many extra valve commands
+        if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {  
 
-        if (status_ok) {
-            send_status_ok();
-        }
+            bool status_ok = true;
+            // force all the checks to be performed
+            status_ok &= check_battery_voltage_error();
+            status_ok &= check_bus_current_error();
+            status_ok &= check_valve_pin_error(requested_valve_state);
 
-        // "thread safe" because main loop should never write to requested_valve_state
-        switch (requested_valve_state) {
-            case VALVE_OPEN:
+            if (status_ok) {
+                send_status_ok();
+            }
+            
+            // check valves before we set them
+            injector_send_status(requested_valve_state);
+
+            // "thread safe" because main loop should never write to requested_valve_state
+            if (requested_valve_state == VALVE_OPEN) {
                 injector_open();
-                break;
-            case VALVE_CLOSED:
+            } else if (requested_valve_state == VALVE_CLOSED) {
                 injector_close();
-                break;
+            } else {
+                // shouldn't get here - we messed up
+                can_msg_t error_msg;
+                build_board_stat_msg(millis(), E_CODING_FUCKUP, NULL, 0, &error_msg);
+                can_send(&error_msg, 3);
+            }
 
-            // should never get here
-            default:
-                // spit a message
-                break;
+            // visual heartbeat indicator
+            if (red_led_on) {
+                RED_LED_OFF();
+                red_led_on = false;
+            } else {
+                RED_LED_ON();
+                red_led_on = true;
+            }
+            
+            // update our counter
+            last_millis = millis();
         }
-
-        // TODO: report valve state
-
     }
 
     return (EXIT_SUCCESS);

@@ -2,12 +2,16 @@
 #define	INJECTOR_H
 
 #include <stdbool.h>
+#include "canlib/message_types.h"
 
 #define _XTAL_FREQ 1000000
+#define MAX_LOOP_TIME_DIFF_ms 250
 
-#define INJ_BATT_UNDERVOLTAGE_THRESHOLD_mV 10000
-#define INJ_BATT_OVERVOLTAGE_THRESHOLD_mV 14000
-#define INJ_OVERCURRENT_THRESHOLD_mA 100
+// [<--------injector close------->] [<--------injector open-------->]
+// HIGH_SIDE_A  LOW_SIDE_B LIM_CLOSE HIGH_SIDE_B  LOW_SIDE_A  LIM_OPEN
+// limit switch signals are active low
+#define EXPECTED_OPEN_PINREADS 0b001110
+#define EXPECTED_CLOSED_PINREADS 0b110001
 
 #define WHITE_LED_ON() (LATC2 = 0) 
 #define WHITE_LED_OFF() (LATC2 = 1)
@@ -16,32 +20,12 @@
 #define BLUE_LED_ON() (LATC4 = 0)
 #define BLUE_LED_OFF() (LATC4 = 1)
 
-void led_init();
+void led_init(void);
 
 // Injector valve control
-void injector_init();
-void injector_open();
-void injector_close();
-
-// Board status checks
-// NOTE: These functions will asynchronously send CAN messages upon error
-
-/*
- * Checks voltage coming off the injector valve battery. If the voltage is below
- * our acceptable threshold, a CAN status message is sent.
- * 
- * Returns true if battery voltage is OK, false otherwise
- */
-bool check_battery_voltage();
-
-/*
- * Checks the current draw of the board from the bus 5V line. This is only supposed
- * to power the logic part of the board and does not power the valve. If the current
- * is above our acceptable threshold, a CAN status message is sent.
- */
-bool check_current_draw();
-
-bool check_valve_status();
+void injector_init(void);
+void injector_open(void);
+void injector_close(void);
+void injector_send_status(enum VALVE_STATE req_state);
 
 #endif	/* INJECTOR_H */
-

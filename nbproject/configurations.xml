@@ -43,6 +43,8 @@
       <itemPath>injector.c</itemPath>
       <itemPath>timer.h</itemPath>
       <itemPath>timer.c</itemPath>
+      <itemPath>error_checks.h</itemPath>
+      <itemPath>error_checks.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
