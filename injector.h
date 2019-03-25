@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include "canlib/message_types.h"
 
-#define _XTAL_FREQ 1000000
 #define MAX_LOOP_TIME_DIFF_ms 250
 
 // [<--------injector close------->] [<--------injector open-------->]

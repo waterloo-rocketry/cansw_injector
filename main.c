@@ -63,13 +63,13 @@ int main(int argc, char** argv) {
 
     uint32_t last_millis = millis();
     bool red_led_on = false;
-    
+
     // main event loop
     while (1) {
 
         // Check status, messages, valve requests every MAX_LOOP_TIME_DIFF_ms millis
         // Avoid spamming bus traffic and sending too many extra valve commands
-        if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {  
+        if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
 
             bool status_ok = true;
             // force all the checks to be performed
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
             if (status_ok) {
                 send_status_ok();
             }
-            
+
             // check valves before we set them
             injector_send_status(requested_valve_state);
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
                 RED_LED_ON();
                 red_led_on = true;
             }
-            
+
             // update our counter
             last_millis = millis();
         }
@@ -175,21 +175,7 @@ static void can_msg_handler(can_msg_t *msg) {
 // Send a CAN message with nominal status
 static void send_status_ok(void) {
     can_msg_t board_stat_msg;
-    board_stat_msg.sid = MSG_GENERAL_BOARD_STATUS | BOARD_UNIQUE_ID;
-
-    // capture the most recent timestamp
-    uint32_t last_millis = millis();
-
-    // paste in the timestamp one byte at a time. Most significant byte goes in data[0].
-    board_stat_msg.data[0] = (last_millis >> 16) & 0xff;
-    board_stat_msg.data[1] = (last_millis >> 8) & 0xff;
-    board_stat_msg.data[2] = (last_millis >> 0) & 0xff;
-
-    // set the error code
-    board_stat_msg.data[3] = E_NOMINAL;
-
-    // 3 byte timestamp + 1 byte error code
-    board_stat_msg.data_len = 4;
+    build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
 
     // send it off at low priority
     can_send(&board_stat_msg, 0);
