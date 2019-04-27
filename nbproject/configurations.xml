@@ -8,6 +8,10 @@
       <itemPath>canlib/can_common.h</itemPath>
       <itemPath>canlib/can_common.c</itemPath>
       <itemPath>canlib/can.h</itemPath>
+      <itemPath>canlib/util/can_tx_buffer.c</itemPath>
+      <itemPath>canlib/util/can_tx_buffer.h</itemPath>
+      <itemPath>canlib/util/safe_ring_buffer.c</itemPath>
+      <itemPath>canlib/util/timing_util.c</itemPath>
     </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
@@ -38,7 +42,6 @@
         <itemPath>mcc_generated_files/adcc.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
-      <itemPath>pindefs.h</itemPath>
       <itemPath>injector.h</itemPath>
       <itemPath>injector.c</itemPath>
       <itemPath>timer.h</itemPath>
@@ -97,7 +100,7 @@
         <property key="asmlist" value="true"/>
         <property key="define-macros" value="BOARD_UNIQUE_ID=BOARD_ID_INJECTOR"/>
         <property key="disable-optimizations" value="false"/>
-        <property key="extra-include-directories" value=""/>
+        <property key="extra-include-directories" value="canlib"/>
         <property key="favor-optimization-for" value="-speed,+space"/>
         <property key="identifier-length" value="255"/>
         <property key="local-generation" value="false"/>
@@ -170,7 +173,6 @@
                   value="Press to browse for a specific firmware version"/>
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

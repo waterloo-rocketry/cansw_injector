@@ -8,6 +8,8 @@
 #include "canlib/can_common.h"
 #include "canlib/pic18f26k83/pic18f26k83_can.h"
 #include "canlib/message_types.h"
+#include "canlib/util/timing_util.h"
+#include "canlib/util/can_tx_buffer.h"
 
 #include "mcc_generated_files/fvr.h"
 #include "mcc_generated_files/adcc.h"
@@ -23,6 +25,9 @@ static void send_status_ok(void);
 // Follows VALVE_STATE in message_types.h
 // SHOULD ONLY BE MODIFIED IN ISR
 static enum VALVE_STATE requested_valve_state = VALVE_OPEN;
+
+// Memory pool for CAN transmit buffer
+uint8_t tx_pool[100];
 
 int main(int argc, char** argv) {
     // MCC Generated Initializations
@@ -52,14 +57,11 @@ int main(int argc, char** argv) {
 
     // set up CAN module
     can_timing_t can_setup;
-    can_setup.brp = 0;
-    can_setup.sjw = 3;
-    can_setup.btlmode = 0x01;
-    can_setup.sam = 0;
-    can_setup.seg1ph = 0x04;
-    can_setup.prseg = 0;
-    can_setup.seg2ph = 0x04;
+    can_generate_timing_params(_XTAL_FREQ, &can_setup);
+
     can_init(&can_setup, can_msg_handler);
+    // set up CAN tx buffer
+    txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
     uint32_t last_millis = millis();
     bool red_led_on = false;
@@ -93,7 +95,7 @@ int main(int argc, char** argv) {
                 // shouldn't get here - we messed up
                 can_msg_t error_msg;
                 build_board_stat_msg(millis(), E_CODING_FUCKUP, NULL, 0, &error_msg);
-                can_send(&error_msg, 3);
+                txb_enqueue(&error_msg);
             }
 
             // visual heartbeat indicator
@@ -108,6 +110,9 @@ int main(int argc, char** argv) {
             // update our counter
             last_millis = millis();
         }
+
+        // send queued CAN messages
+        txb_heartbeat();
     }
 
     return (EXIT_SUCCESS);
@@ -178,5 +183,5 @@ static void send_status_ok(void) {
     build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
 
     // send it off at low priority
-    can_send(&board_stat_msg, 0);
+    txb_enqueue(&board_stat_msg);
 }
