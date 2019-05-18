@@ -11,6 +11,8 @@
 
 #include <xc.h>
 
+static enum VALVE_STATE current_valve_state = VALVE_UNK;
+
 void led_init(void) {
     TRISC2 = 0;     // set as output
     LATC2 = 1;      // turn it off
@@ -51,29 +53,37 @@ void injector_init(void) {
 }
 
 void injector_close(void) {
-    WHITE_LED_OFF();
-    // turn everything off for a bit to avoid shoot-through
-    LATB4 = 0;
-    LATB5 = 0;
-    LATB2 = 0;
-    LATB3 = 0;
+    if (current_valve_state == VALVE_CLOSED) {
+        return;
+    } else {
+        WHITE_LED_OFF();
+        LATB4 = 0;
+        LATB5 = 0;
+        LATB2 = 0;
+        LATB3 = 0;
 
-    __delay_us(200);
-    LATB4 = 1;  // high side A -> high
-    LATB3 = 1;  // low side B -> high
+        __delay_us(200);
+        LATB4 = 1;  // high side A -> high
+        LATB3 = 1;  // low side B -> high
+        current_valve_state = VALVE_CLOSED;
+    }
 }
 
 void injector_open(void) {
-    WHITE_LED_ON();
-    // turn everything off for a bit to avoid shoot-through
-    LATB4 = 0;
-    LATB5 = 0;
-    LATB2 = 0;
-    LATB3 = 0;
+    if (current_valve_state == VALVE_OPEN) {
+        return;
+    } else {
+        WHITE_LED_ON();
+        LATB4 = 0;
+        LATB5 = 0;
+        LATB2 = 0;
+        LATB3 = 0;
 
-    __delay_us(200);
-    LATB5 = 1;  // high side B -> high
-    LATB2 = 1;  // low side A -> high
+        __delay_us(200);
+        LATB5 = 1;  // high side B -> high
+        LATB2 = 1;  // low side A -> high
+        current_valve_state = VALVE_OPEN;
+    }
 }
 
 void injector_depower(void) {
@@ -83,6 +93,8 @@ void injector_depower(void) {
     LATB5 = 0;
     LATB2 = 0;
     LATB3 = 0;
+
+    current_valve_state = VALVE_UNK;
 }
 
 void injector_send_status(enum VALVE_STATE req_state) {
