@@ -24,7 +24,7 @@ static void send_status_ok(void);
 
 // Follows VALVE_STATE in message_types.h
 // SHOULD ONLY BE MODIFIED IN ISR
-static enum VALVE_STATE requested_valve_state = VALVE_OPEN;
+static enum VALVE_STATE requested_valve_state = VALVE_UNK;
 
 // Memory pool for CAN transmit buffer
 uint8_t tx_pool[100];
@@ -91,6 +91,10 @@ int main(int argc, char** argv) {
                 injector_open();
             } else if (requested_valve_state == VALVE_CLOSED) {
                 injector_close();
+            } else if (requested_valve_state == VALVE_UNK) {
+                // the radio board telling us VALVE_UNK means that we shouldn't
+                // be applying power to any of the valve pins
+                injector_depower();
             } else {
                 // shouldn't get here - we messed up
                 can_msg_t error_msg;

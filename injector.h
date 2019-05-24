@@ -25,6 +25,7 @@ void led_init(void);
 void injector_init(void);
 void injector_open(void);
 void injector_close(void);
+void injector_depower(void);
 void injector_send_status(enum VALVE_STATE req_state);
 
 #endif	/* INJECTOR_H */

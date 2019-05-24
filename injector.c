@@ -76,6 +76,15 @@ void injector_open(void) {
     LATB2 = 1;  // low side A -> high
 }
 
+void injector_depower(void) {
+    WHITE_LED_OFF();
+    //turn everything off
+    LATB4 = 0;
+    LATB5 = 0;
+    LATB2 = 0;
+    LATB3 = 0;
+}
+
 void injector_send_status(enum VALVE_STATE req_state) {
     enum VALVE_STATE curr_state;
     
