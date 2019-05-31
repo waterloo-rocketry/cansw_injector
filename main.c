@@ -95,6 +95,11 @@ int main(int argc, char** argv) {
                 // the radio board telling us VALVE_UNK means that we shouldn't
                 // be applying power to any of the valve pins
                 injector_depower();
+            } else if (requested_valve_state == VALVE_ILLEGAL) {
+                // VALVE_ILLEGAL is the signal to open the injector valve a little
+                // bit in order to vent nitrous out of the flight tank. So jog
+                // the injector valve (open it for a few hundred milliseconds)
+                injector_jog();
             } else {
                 // shouldn't get here - we messed up
                 can_msg_t error_msg;

@@ -98,18 +98,28 @@ void injector_depower(void) {
 }
 
 void injector_jog(void) {
-    // open the valve bit by bit until the "CLOSED" limit switch is no longer pressed
-    // switch is active low
-    while (!PORTBbits.RB0) {
-
-        // janky PWM so we don't blow past the position too quickly
-        LATB5 = 1;
-        LATB2 = 1;
-        __delay_ms(5);
-
+    // don't jog the valve twice in a row, since then it'd be fully open
+    if (current_valve_state == VALVE_ILLEGAL) {
+        return;
+    } else {
+        // turn everything off for just a moment, avoid shoot-through
+        LATB4 = 0;
         LATB5 = 0;
         LATB2 = 0;
-        __delay_ms(5);
+        LATB3 = 0;
+        __delay_us(200);
+
+        // open the valve for 200ms, then turn everything off. Empirically this
+        // seems to open the valve approximately 45 degrees, which is open enough
+        // to allow air to pass but not open enough to be able to see through
+        injector_open();
+        __delay_ms(200);
+        LATB4 = 0;
+        LATB5 = 0;
+        LATB2 = 0;
+        LATB3 = 0;
+
+        current_valve_state = VALVE_ILLEGAL;
     }
 }
 
