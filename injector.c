@@ -85,6 +85,22 @@ void injector_depower(void) {
     LATB3 = 0;
 }
 
+void injector_jog(void) {
+    // open the valve bit by bit until the "CLOSED" limit switch is no longer pressed
+    // switch is active low
+    while (!PORTBbits.RB0) {
+
+        // janky PWM so we don't blow past the position too quickly
+        LATB5 = 1;
+        LATB2 = 1;
+        __delay_ms(5);
+
+        LATB5 = 0;
+        LATB2 = 0;
+        __delay_ms(5);
+    }
+}
+
 void injector_send_status(enum VALVE_STATE req_state) {
     enum VALVE_STATE curr_state;
     

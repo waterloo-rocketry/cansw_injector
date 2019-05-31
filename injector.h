@@ -21,11 +21,24 @@
 
 void led_init(void);
 
-// Injector valve control
+// Initialize pins for injector valve control
 void injector_init(void);
-void injector_open(void);
+
+// Close the injector valve. Asynchronous.
 void injector_close(void);
+
+// Open the injector valve. Asynchronous.
+void injector_open(void);
+
+// Kill all power to the injector pins
 void injector_depower(void);
+
+// Open the injector valve a little bit to act as an emergency vent. This
+// function is SYNCHRONOUS and will block while the valve is opened.
+// Upon completion, limit switch state will return VALVE_UNK.
+void injector_jog(void);
+
+// Report the current and requested valve state over CAN
 void injector_send_status(enum VALVE_STATE req_state);
 
 #endif	/* INJECTOR_H */
