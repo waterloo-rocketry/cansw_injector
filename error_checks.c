@@ -41,13 +41,19 @@ bool check_battery_voltage_error(void) {
         return false;
     }
 
+    // also send the battery voltage as a sensor data message
+    // this may or may not be the best place to put this
+    can_msg_t batt_msg;
+    build_analog_data_msg(millis(), SENSOR_VENT_BATT, batt_voltage_mV, &batt_msg);
+    txb_enqueue(&batt_msg);
+
     // things look ok
     return true;
 }
 
 bool check_bus_current_error(void) {
     adc_result_t sense_raw_mV = ADCC_GetSingleConversion(channel_VSENSE);
-    int curr_draw_mA = (sense_raw_mV) / 20;
+    uint16_t curr_draw_mA = (sense_raw_mV) / 20;
 
     if (curr_draw_mA > INJ_OVERCURRENT_THRESHOLD_mA) {
         uint32_t timestamp = millis();
