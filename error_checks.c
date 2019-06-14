@@ -18,11 +18,11 @@ bool check_battery_voltage_error(void) {
     adc_result_t batt_raw = ADCC_GetSingleConversion(channel_VBAT);
 
     // Vref: 4.096V, Resolution: 12 bits -> raw ADC value is precisely in mV
-    uint16_t batt_voltage_mV = (uint16_t)batt_raw;
+    uint32_t batt_voltage_mV = (uint16_t)batt_raw;
 
     // get the un-scaled battery voltage (voltage divider)
     // we don't care too much about precision - some truncation is fine
-    batt_voltage_mV = batt_voltage_mV * 37 / 10;
+    batt_voltage_mV = batt_voltage_mV * 45 / 10;
 
     if (batt_voltage_mV < INJ_BATT_UNDERVOLTAGE_THRESHOLD_mV
             || batt_voltage_mV > INJ_BATT_OVERVOLTAGE_THRESHOLD_mV) {
@@ -44,7 +44,7 @@ bool check_battery_voltage_error(void) {
     // also send the battery voltage as a sensor data message
     // this may or may not be the best place to put this
     can_msg_t batt_msg;
-    build_analog_data_msg(millis(), SENSOR_VENT_BATT, batt_voltage_mV, &batt_msg);
+    build_analog_data_msg(millis(), SENSOR_INJ_BATT, (uint16_t) batt_voltage_mV, &batt_msg);
     txb_enqueue(&batt_msg);
 
     // things look ok
